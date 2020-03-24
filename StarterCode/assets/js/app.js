@@ -139,10 +139,8 @@ const plot = function (aggr) {
     yAxis = chartGroup
       .append('g')
       .classed('y-axis', true)
-      .attr("transform", `translate(0, 0)`)
+      .attr("transform", `translate(${margin.left - 100},0)`)
       .call(leftAxis);
-
-    chartGroup.append("g").call(leftAxis)
 
     let circlesGroup = chartGroup
       .selectAll("circle")
@@ -176,6 +174,7 @@ const plot = function (aggr) {
     let xlabelsGroup = chartGroup
       .append("g")
       .attr("transform", `translate(${width / 2}, ${height + 20})`)
+
 
     xlabelsGroup
       .append("text")

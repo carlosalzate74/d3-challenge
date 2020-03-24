@@ -25,6 +25,7 @@ let chartGroup = svg
 let selectedXAxis = "poverty"
 let selectedYAxis = "noHealthInsurance"
 
+
 /**
  * Returns a updated scale based on the current selection.
  **/
@@ -60,16 +61,16 @@ function renderXAxis(newXScale, xAxis) {
   let bottomAxis = d3.axisBottom(newXScale)
   xAxis
     .transition()
-    .duration(1000)
+    .duration(500)
     .call(bottomAxis)
   return xAxis
 }
 
 function renderYAxis(newYScale, yAxis) {
-  var leftAxis = d3.axisLeft(newYScale);
+  let leftAxis = d3.axisLeft(newYScale);
   yAxis
     .transition()
-    .duration(1000)
+    .duration(500)
     .call(leftAxis);
   return yAxis;
 }
@@ -80,7 +81,7 @@ function renderYAxis(newYScale, yAxis) {
 function renderCircles(circlesGroup, newXScale, selectedXAxis, newYScale, selectedYAxis) {
   circlesGroup
     .transition()
-    .duration(1000)
+    .duration(500)
     .attr("cx", d => newXScale(d[selectedXAxis]))
     .attr('cy', d => newYScale(d[selectedYAxis]))
   return circlesGroup
@@ -89,29 +90,56 @@ function renderCircles(circlesGroup, newXScale, selectedXAxis, newYScale, select
 function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxis) {
   textGroup
     .transition()
-    .duration(1000)
+    .duration(500)
     .attr('x', d => newXScale(d[selectedXAxis]))
     .attr('y', d => newYScale(d[selectedYAxis]));
   return textGroup
 }
 
-;(function() {
-  d3.csv("assets/data/data.csv").then(healthData => {
+d3.select("#slider").on("change", function(d){
+    console.log(this.value)
+    plot(this.value)
+})
+
+const plot = function (aggr) {
+  d3.csv("assets/data/data.csv").then(data => {
+    
+    healthData = data
+
+    if (aggr == 1){
+      healthData = d3.nest()
+        .key(d => d.region)
+        .rollup(function(d) { 
+          return {
+            'poverty': d3.sum(d, e => +e.poverty ),
+            'age': d3.sum(d, e => +e.age ),
+            'income': d3.sum(d, e => +e.income ),
+            'noHealthInsurance': d3.sum(d, e => +e.noHealthInsurance ),
+            'obesity': d3.sum(d, e => +e.obesity ),
+            'smokes': d3.sum(d, e => +e.smokes )
+            }
+        }).entries(data);
+    }
+
+    console.log(healthData)
+
+    // healthData = getData(aggr)
     let xLinearScale = xScale(healthData, selectedXAxis)
     let yLinearScale = yScale(healthData, selectedYAxis)
 
     let bottomAxis = d3.axisBottom(xLinearScale)
-
     let leftAxis = d3.axisLeft(yLinearScale)
-    
+
     xAxis = chartGroup
       .append("g")
       .classed("x-axis", true)
       .attr("transform", `translate(0, ${height})`)
       .call(bottomAxis)
 
-    yAxis = chartGroup.append('g')
+    yAxis = chartGroup
+      .append('g')
       .classed('y-axis', true)
+      .attr("transform", `translate(0, 0)`)
       .call(leftAxis);
 
     chartGroup.append("g").call(leftAxis)
@@ -137,14 +165,18 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
       .append("tspan")
       .attr("fill", "white")
       .attr("x", d => xLinearScale(d[selectedXAxis]))
-      .attr("y", d => yLinearScale(d[selectedYAxis] - 0.2))
-      .text(d => d.abbr)
+      .attr("y", d => yLinearScale(d[selectedYAxis]))
+
+      if (aggr == 0)
+        textGroup.text(d => d.abbr)
+      else
+        textGroup.text(d => d.region)
       
      
     let xlabelsGroup = chartGroup
       .append("g")
       .attr("transform", `translate(${width / 2}, ${height + 20})`)
-    
+
     xlabelsGroup
       .append("text")
       .attr("x", 0)
@@ -152,7 +184,7 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
       .attr("value", "poverty")
       .classed("active", true)
       .text("In Poverty (%)")
-    
+
     xlabelsGroup
       .append("text")
       .attr("x", 0)
@@ -160,7 +192,7 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
       .attr("value", "age")
       .classed("inactive", true)
       .text("Age (Median)")
-    
+
     xlabelsGroup
       .append("text")
       .attr("x", 0)
@@ -172,7 +204,7 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
     let ylabelsGroup = chartGroup
       .append("g")
       .attr("transform", `translate(${0 - margin.left / 4}, ${height / 2})`)
-    
+
     ylabelsGroup
       .append("text")
       .attr("transform", "rotate(-90)")
@@ -183,7 +215,7 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
       .classed("axis-text", true)
       .classed("active", true)
       .text("Lacks Healhcare (%)")
-    
+
     ylabelsGroup
       .append("text")
       .attr("transform", "rotate(-90)")
@@ -194,7 +226,7 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
       .classed("axis-text", true)
       .classed("inactive", true)
       .text("Smokes (%)")
-    
+
     ylabelsGroup
       .append("text")
       .attr("transform", "rotate(-90)")
@@ -205,7 +237,7 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
       .classed("axis-text", true)
       .classed("inactive", true)
       .text("Obesity (%)")
-    
+
     // Crate an event listener to call the update functions when a label is clicked
     xlabelsGroup.selectAll("text").on("click", function() {
       let value = d3.select(this).attr("value")
@@ -220,8 +252,7 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
         circlesGroup = renderCircles(circlesGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
         textGroup = renderText(textGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis);
       }
-    }
-    )
+    })
 
     ylabelsGroup.selectAll("text").on("click", function() {
       let value = d3.select(this).attr("value")
@@ -236,9 +267,10 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
         circlesGroup = renderCircles(circlesGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
         textGroup = renderText(textGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis);
       }
-    }
-    )
+    })
+  })
+}
 
-  }
-  )
-})()
+window.onload = function() {
+  plot(0)
+}

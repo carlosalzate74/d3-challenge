@@ -1,33 +1,43 @@
-// svg size
-const svgWidth = 960
-const svgHeight = 500
+  // svg size
+  const svgWidth = 960
+  const svgHeight = 500
 
-// chart margins
-let margin = {
-  top: 60,
-  right: 40,
-  bottom: 120,
-  left: 100
+  // chart margins
+  let margin = {
+    top: 60,
+    right: 40,
+    bottom: 120,
+    left: 100
+  }
+
+  // Declaring global variables
+  let width = svgWidth - margin.left - margin.right
+  let height = svgHeight - margin.top - margin.bottom
+  let svg
+  let chartGroup
+  let selectedXAxis
+  let selectedYAxis
+  let tooltipTitle
+
+function reset(){
+  d3.select("svg").remove()
+
+  // Initial selections
+  selectedXAxis = "poverty"
+  selectedYAxis = "noHealthInsurance"
+
+  // Create an svg object
+  svg = d3
+    .select("#scatter")
+    .append("svg")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight)
+
+  // Create a chart group
+  chartGroup = svg
+    .append("g")
+    .attr("transform", `translate(${margin.left}, ${margin.top})`)
 }
-
-let width = svgWidth - margin.left - margin.right
-let height = svgHeight - margin.top - margin.bottom
-
-// Create an svg object
-let svg = d3
-  .select("#scatter")
-  .append("svg")
-  .attr("width", svgWidth)
-  .attr("height", svgHeight)
-
-// Create a chart group
-let chartGroup = svg
-  .append("g")
-  .attr("transform", `translate(${margin.left}, ${margin.top})`)
-
-// Initial selections
-let selectedXAxis = "poverty"
-let selectedYAxis = "noHealthInsurance"
 
 // Capitalize first letter of text
 const capitalize = (s) => {
@@ -100,43 +110,37 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
 
 // Creates an slider to select between state or region
 d3.select("#slider").on("change", function(d){
-    console.log(this.value)
-    plot(this.value)
+  plot(this.value)
 })
 
 // Creates and updates the chart
 const plot = function (aggr) {
+  reset()
   d3.csv("assets/data/data.csv").then(data => {
+    let healthData = ""
 
-    console.log(data)
-
-    // Aggregates data in case of region selected
+    // Aggregates data by region
     if (aggr == 1){
       aggrData = d3.nest()
         .key(d => d.region)
         .rollup(function(d) { 
           return {
-            'poverty': d3.sum(d, e => +e.poverty ),
-            'age': d3.sum(d, e => +e.age ),
-            'income': d3.sum(d, e => +e.income ),
-            'noHealthInsurance': d3.sum(d, e => +e.noHealthInsurance ),
-            'obesity': d3.sum(d, e => +e.obesity ),
-            'smokes': d3.sum(d, e => +e.smokes )
+            "region": d3.max(d, e => e.region),
+            "poverty": d3.mean(d, e => +e.poverty),
+            "age": d3.mean(d, e => +e.age ),
+            "income": d3.sum(d, e => +e.income ),
+            "noHealthInsurance": d3.mean(d, e => +e.noHealthInsurance ),
+            "obesity": d3.mean(d, e => +e.obesity ),
+            "smokes": d3.mean(d, e => +e.smokes )
             }
         }).entries(data);
 
-         // This will be the resulting array
-
-        for(let key in aggrData) {
-          let entry = aggrData[key]; // This will be each of the three graded things
-          entry.id = key; // e.g. "id": "assessment1"
-          healthData.push(entry)
-        }
+        healthData = [];
+        for (let i = 0, hd; i < aggrData.length; i++) 
+          healthData.push(aggrData[i].value)
     }
     else
       healthData = data
-
-    console.log(healthData)
 
     // Define scales and axes
     let xLinearScale = xScale(healthData, selectedXAxis)
@@ -166,10 +170,16 @@ const plot = function (aggr) {
     // Function to control when to show the tooltip
     let mouseover = function(d) {    
       div.transition()       
-          .style("opacity", .9);    
-      div .html("<strong>" + d.state + "</strong>" + "<br/>" + 
-                capitalize(selectedXAxis) + ": " + d[selectedXAxis] + "<br/>" + 
-                capitalize(selectedYAxis) + ": " + d[selectedYAxis])  
+          .style("opacity", .9);
+
+      if (aggr == 0)
+        tooltipTitle = d.state
+      else
+        tooltipTitle = d.region
+
+      div .html("<strong>" + tooltipTitle + "</strong>" + "<br/>" + 
+                capitalize(selectedXAxis) + ": " + parseFloat(d[selectedXAxis]).toFixed(1) + "<br/>" + 
+                capitalize(selectedYAxis) + ": " + parseFloat(d[selectedYAxis]).toFixed(1))  
           .style("left", (d3.event.pageX) + "px")   
           .style("top", (d3.event.pageY - 28) + "px")  
       }
@@ -212,7 +222,7 @@ const plot = function (aggr) {
       if (aggr == 0)
         textGroup.text(d => d.abbr)
       else
-        textGroup.text(d => d.region)
+        textGroup.text(d => d.region.charAt(0))
       
     // Add lables for X axis
     let xlabelsGroup = chartGroup

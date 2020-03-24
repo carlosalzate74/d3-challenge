@@ -1,6 +1,8 @@
+// svg size
 const svgWidth = 960
 const svgHeight = 500
 
+// chart margins
 let margin = {
   top: 60,
   right: 40,
@@ -11,24 +13,28 @@ let margin = {
 let width = svgWidth - margin.left - margin.right
 let height = svgHeight - margin.top - margin.bottom
 
+// Create an svg object
 let svg = d3
   .select("#scatter")
   .append("svg")
   .attr("width", svgWidth)
   .attr("height", svgHeight)
 
+// Create a chart group
 let chartGroup = svg
   .append("g")
   .attr("transform", `translate(${margin.left}, ${margin.top})`)
 
-// View selection - changing this triggers transition
+// Initial selections
 let selectedXAxis = "poverty"
 let selectedYAxis = "noHealthInsurance"
 
+// Capitalize first letter of text
+const capitalize = (s) => {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
-/**
- * Returns a updated scale based on the current selection.
- **/
+// Create the X scale
 function xScale(healthData, selectedXAxis) {
   let xLinearScale = d3
     .scaleLinear()
@@ -40,9 +46,7 @@ function xScale(healthData, selectedXAxis) {
   return xLinearScale
 }
 
-/**
- * Returns a updated scale based on the current selection.
- **/
+// Create the Y scale
 function yScale(healthData, selectedYAxis) {
   let yLinearScale = d3
     .scaleLinear()
@@ -54,9 +58,7 @@ function yScale(healthData, selectedYAxis) {
   return yLinearScale
 }
 
-/**
- * Returns and appends an updated x-axis based on a scale.
- **/
+// Creates and updates X axis
 function renderXAxis(newXScale, xAxis) {
   let bottomAxis = d3.axisBottom(newXScale)
   xAxis
@@ -66,6 +68,7 @@ function renderXAxis(newXScale, xAxis) {
   return xAxis
 }
 
+// Creates and updates Y axis
 function renderYAxis(newYScale, yAxis) {
   let leftAxis = d3.axisLeft(newYScale);
   yAxis
@@ -75,9 +78,7 @@ function renderYAxis(newYScale, yAxis) {
   return yAxis;
 }
 
-/**
- * Returns and appends an updated circles group based on a new scale and the currect selection.
- **/
+// Creates and updates circles
 function renderCircles(circlesGroup, newXScale, selectedXAxis, newYScale, selectedYAxis) {
   circlesGroup
     .transition()
@@ -87,6 +88,7 @@ function renderCircles(circlesGroup, newXScale, selectedXAxis, newYScale, select
   return circlesGroup
 }
 
+// Creates and updates text within circles
 function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxis) {
   textGroup
     .transition()
@@ -96,18 +98,21 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
   return textGroup
 }
 
+// Creates an slider to select between state or region
 d3.select("#slider").on("change", function(d){
     console.log(this.value)
     plot(this.value)
 })
 
+// Creates and updates the chart
 const plot = function (aggr) {
   d3.csv("assets/data/data.csv").then(data => {
-    
-    healthData = data
 
+    console.log(data)
+
+    // Aggregates data in case of region selected
     if (aggr == 1){
-      healthData = d3.nest()
+      aggrData = d3.nest()
         .key(d => d.region)
         .rollup(function(d) { 
           return {
@@ -119,40 +124,76 @@ const plot = function (aggr) {
             'smokes': d3.sum(d, e => +e.smokes )
             }
         }).entries(data);
+
+         // This will be the resulting array
+
+        for(let key in aggrData) {
+          let entry = aggrData[key]; // This will be each of the three graded things
+          entry.id = key; // e.g. "id": "assessment1"
+          healthData.push(entry)
+        }
     }
+    else
+      healthData = data
 
     console.log(healthData)
 
-    // healthData = getData(aggr)
+    // Define scales and axes
     let xLinearScale = xScale(healthData, selectedXAxis)
     let yLinearScale = yScale(healthData, selectedYAxis)
-
     let bottomAxis = d3.axisBottom(xLinearScale)
     let leftAxis = d3.axisLeft(yLinearScale)
 
+    // Add X axis to chart group
     xAxis = chartGroup
       .append("g")
       .classed("x-axis", true)
       .attr("transform", `translate(0, ${height})`)
       .call(bottomAxis)
 
+    // Add Y axis to chart group
     yAxis = chartGroup
       .append('g')
       .classed('y-axis', true)
       .attr("transform", `translate(${margin.left - 100},0)`)
       .call(leftAxis);
 
+    // Add div for tooltip
+    let div = d3.select("body").append("div") 
+      .attr("class", "tooltip")       
+      .style("opacity", 0);
+
+    // Function to control when to show the tooltip
+    let mouseover = function(d) {    
+      div.transition()       
+          .style("opacity", .9);    
+      div .html("<strong>" + d.state + "</strong>" + "<br/>" + 
+                capitalize(selectedXAxis) + ": " + d[selectedXAxis] + "<br/>" + 
+                capitalize(selectedYAxis) + ": " + d[selectedYAxis])  
+          .style("left", (d3.event.pageX) + "px")   
+          .style("top", (d3.event.pageY - 28) + "px")  
+      }
+
+     let mouseout = function(d) {   
+        div.transition()      
+            .style("opacity", 0)
+        }
+
+    // Add circles to chart group
     let circlesGroup = chartGroup
       .selectAll("circle")
       .data(healthData)
       .enter()
       .append("circle")
-      .attr("cx", d => xLinearScale(d[selectedXAxis]))
-      .attr("cy", d => yLinearScale(d[selectedYAxis]))
-      .attr("r", 15)
-      .attr("fill", "blue")
-      .attr("opacity", ".6")
+        .attr("cx", d => xLinearScale(d[selectedXAxis]))
+        .attr("cy", d => yLinearScale(d[selectedYAxis]))
+        .attr("r", 15)
+        .attr("fill", "blue")
+        .attr("opacity", ".6")
+      .on("mouseover", mouseover)
+      .on("mouseout", mouseout) 
 
+    // Add text to circles and chart group
     let textGroup = chartGroup
       .append("text")
       .style("text-anchor", "middle")
@@ -161,21 +202,24 @@ const plot = function (aggr) {
       .data(healthData)
       .enter()
       .append("tspan")
-      .attr("fill", "white")
-      .attr("x", d => xLinearScale(d[selectedXAxis]))
-      .attr("y", d => yLinearScale(d[selectedYAxis]))
+        .attr("fill", "white")
+        .attr("x", d => xLinearScale(d[selectedXAxis]))
+        .attr("y", d => yLinearScale(d[selectedYAxis]))
+      .on("mouseover", mouseover)
+      .on("mouseout", mouseout) 
 
+      // If data is aggregated, use region field
       if (aggr == 0)
         textGroup.text(d => d.abbr)
       else
         textGroup.text(d => d.region)
       
-     
+    // Add lables for X axis
     let xlabelsGroup = chartGroup
       .append("g")
       .attr("transform", `translate(${width / 2}, ${height + 20})`)
 
-
+    // Label for poverty
     xlabelsGroup
       .append("text")
       .attr("x", 0)
@@ -184,6 +228,7 @@ const plot = function (aggr) {
       .classed("active", true)
       .text("In Poverty (%)")
 
+    // Label for age
     xlabelsGroup
       .append("text")
       .attr("x", 0)
@@ -192,6 +237,7 @@ const plot = function (aggr) {
       .classed("inactive", true)
       .text("Age (Median)")
 
+    // Label for income
     xlabelsGroup
       .append("text")
       .attr("x", 0)
@@ -200,10 +246,12 @@ const plot = function (aggr) {
       .classed("inactive", true)
       .text("Income (Median)")
 
+    // Add lables for Y axis
     let ylabelsGroup = chartGroup
       .append("g")
       .attr("transform", `translate(${0 - margin.left / 4}, ${height / 2})`)
 
+    // Label for health insurance
     ylabelsGroup
       .append("text")
       .attr("transform", "rotate(-90)")
@@ -215,6 +263,7 @@ const plot = function (aggr) {
       .classed("active", true)
       .text("Lacks Healhcare (%)")
 
+    // Label for smokes
     ylabelsGroup
       .append("text")
       .attr("transform", "rotate(-90)")
@@ -226,6 +275,7 @@ const plot = function (aggr) {
       .classed("inactive", true)
       .text("Smokes (%)")
 
+    // Label for obesity
     ylabelsGroup
       .append("text")
       .attr("transform", "rotate(-90)")
@@ -249,10 +299,11 @@ const plot = function (aggr) {
         xLinearScale = xScale(healthData, selectedXAxis)
         xAxis = renderXAxis(xLinearScale, xAxis)
         circlesGroup = renderCircles(circlesGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
-        textGroup = renderText(textGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis);
+        textGroup = renderText(textGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
       }
     })
 
+    // Crate an event listener to call the update functions when a label is clicked
     ylabelsGroup.selectAll("text").on("click", function() {
       let value = d3.select(this).attr("value")
 
@@ -264,7 +315,7 @@ const plot = function (aggr) {
         yLinearScale = yScale(healthData, selectedYAxis)
         yAxis = renderYAxis(yLinearScale, yAxis)
         circlesGroup = renderCircles(circlesGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
-        textGroup = renderText(textGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis);
+        textGroup = renderText(textGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
       }
     })
   })

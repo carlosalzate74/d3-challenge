@@ -1,0 +1,40 @@
+[
+{
+	"key": "pov_noH",
+	"desc": "East and Midwest regions show the lowest percentage of poverty around 13% and the lowest lack of health insurance around 11%"
+},
+{
+	"key": "pov_smo",
+	"desc": "Mississippi and New Mexico show the highest percentage in poverty (~21%) with around 22% of smokers."
+},
+{
+	"key": "pov_obe",
+	"desc": "South region show the highest level of poverty around 17% and a level of obesity of 31%"
+},
+
+{
+	"key": "age_noH",
+	"desc": "Given the data sample, in most states, 8% to 18% of the people between the ages of 36 to 40 years old doesn't have access to healthcare."
+},
+{
+	"key": "age_smo",
+	"desc": "Kentuky and West Virginia have the highest number of smokers (~26%) with age between 38 and 41 years old compared with the all the states."
+},
+{
+	"key": "age_obe",
+	"desc": "People around 38 years old represent a median obesity indicator, between 27% and 31%."
+},
+
+{
+	"key": "inc_noH",
+	"desc": "Texas shows the highest lack of healthcare of 24% with a median income of $53,000 per year. While Massachussetts shows the lowest lack of healthcare of 4% and a median income of $69,000 per year."
+},
+{
+	"key": "inc_smo",
+	"desc": "States with higher income around $72,000 per year shows a level of smokers around 15%."
+},
+{
+	"key": "inc_obe",
+	"desc": "States with a median income of $40,000 per year show the highest level of obesity around 36%"
+}
+]

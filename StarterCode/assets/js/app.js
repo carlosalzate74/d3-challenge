@@ -108,6 +108,20 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
   return textGroup
 }
 
+// Get the analysis text and title based on selected variables
+function updateP(selectedXAxis, selectedYAxis){
+  d3.select("#descTitle").text("Correlation discovered between " + capitalize(selectedXAxis) + 
+                               " and " + capitalize(selectedYAxis))
+  d3.json("assets/data/results.json").then (data =>  {
+    selAxis = selectedXAxis.slice(0,3) + "_" + selectedYAxis.slice(0,3)
+
+    data.forEach(el => {
+      if(el.key == selAxis)
+        d3.select("#descP").text(el.desc)
+    })    
+  })
+}
+
 // Creates an slider to select between state or region
 d3.select("#slider").on("change", function(d){
   plot(this.value)
@@ -310,6 +324,7 @@ const plot = function (aggr) {
         xAxis = renderXAxis(xLinearScale, xAxis)
         circlesGroup = renderCircles(circlesGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
         textGroup = renderText(textGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
+        updateP(selectedXAxis, selectedYAxis)
       }
     })
 
@@ -326,6 +341,7 @@ const plot = function (aggr) {
         yAxis = renderYAxis(yLinearScale, yAxis)
         circlesGroup = renderCircles(circlesGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
         textGroup = renderText(textGroup, xLinearScale, selectedXAxis, yLinearScale, selectedYAxis)
+        updateP(selectedXAxis, selectedYAxis)
       }
     })
   })
@@ -333,4 +349,5 @@ const plot = function (aggr) {
 
 window.onload = function() {
   plot(0)
+  updateP(selectedXAxis, selectedYAxis)
 }

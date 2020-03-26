@@ -110,10 +110,14 @@ function renderText(textGroup, newXScale, selectedXAxis, newYScale, selectedYAxi
 
 // Get the analysis text and title based on selected variables
 function updateP(selectedXAxis, selectedYAxis){
-  d3.select("#descTitle").text("Correlation discovered between " + capitalize(selectedXAxis) + 
-                               " and " + capitalize(selectedYAxis))
   d3.json("assets/data/results.json").then (data =>  {
     selAxis = selectedXAxis.slice(0,3) + "_" + selectedYAxis.slice(0,3)
+
+  if (selectedYAxis == "noHealthInsurance")
+    selectedYAxis = "Lack of Healthcare"
+
+  d3.select("#descTitle").text("Correlation discovered between " + capitalize(selectedXAxis) + 
+                               " and " + capitalize(selectedYAxis))
 
     data.forEach(el => {
       if(el.key == selAxis)
@@ -192,9 +196,24 @@ const plot = function (aggr) {
       else
         tooltipTitle = d.region
 
+      if (selectedYAxis == "noHealthInsurance")
+        tooltipYAxis = "Lack of Healthcare"
+      else
+        tooltipYAxis = selectedYAxis
+
+      let formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      });
+
+      if (selectedXAxis == "income")
+        tooltipValue = formatter.format(d[selectedXAxis])
+      else
+        tooltipValue = parseFloat(d[selectedXAxis]).toFixed(1)
+
       div .html("<strong>" + tooltipTitle + "</strong>" + "<br/>" + 
-                capitalize(selectedXAxis) + ": " + parseFloat(d[selectedXAxis]).toFixed(1) + "<br/>" + 
-                capitalize(selectedYAxis) + ": " + parseFloat(d[selectedYAxis]).toFixed(1))  
+                capitalize(selectedXAxis) + ": " + tooltipValue + "<br/>" + 
+                capitalize(tooltipYAxis) + ": " + parseFloat(d[selectedYAxis]).toFixed(1))  
           .style("left", (d3.event.pageX) + "px")   
           .style("top", (d3.event.pageY - 28) + "px")  
       }

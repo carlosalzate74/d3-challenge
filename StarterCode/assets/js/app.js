@@ -1,4 +1,4 @@
-  // svg size
+  // Define svg size
   const svgWidth = 960
   const svgHeight = 500
 
@@ -125,6 +125,7 @@ function updateP(selectedXAxis, selectedYAxis){
 // Creates an slider to select between state or region
 d3.select("#slider").on("change", function(d){
   plot(this.value)
+  updateP(selectedXAxis, selectedYAxis)
 })
 
 // Creates and updates the chart
